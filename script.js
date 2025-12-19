@@ -130,6 +130,16 @@ class Edita {
                 this.logError('UNHANDLED PROMISE', event.reason);
             });
 
+            // Unregister service worker to prevent caching issues during development
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (let registration of registrations) {
+                        registration.unregister();
+                        console.log('Service worker unregistered for testing');
+                    }
+                });
+            }
+            
             // PWA install prompt
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
