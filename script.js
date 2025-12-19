@@ -48,8 +48,6 @@ class Edita {
             document.getElementById('openBtn').addEventListener('click', () => document.getElementById('fileInput').click());
             document.getElementById('saveBtn').addEventListener('click', () => this.saveFile());
             document.getElementById('findBtn').addEventListener('click', () => this.find());
-            document.getElementById('replaceBtn').addEventListener('click', () => this.replace());
-            document.getElementById('findInFilesBtn').addEventListener('click', () => this.findInFiles());
             document.getElementById('verticalTabsBtn').addEventListener('click', () => this.toggleVerticalTabs());
             document.getElementById('themeBtn').addEventListener('click', () => this.toggleTheme());
             document.getElementById('logsBtn').addEventListener('click', () => this.showLogs());
