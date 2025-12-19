@@ -1377,10 +1377,17 @@ class Edita {
 
     loadVerticalTabsPreference() {
         try {
-            const isVertical = localStorage.getItem('edita_vertical_tabs') === 'true';
+            const stored = localStorage.getItem('edita_vertical_tabs');
+            // Default to vertical if no preference stored
+            const isVertical = stored === null ? true : stored === 'true';
+            
             if (isVertical) {
                 document.getElementById('tabsContainer').classList.add('vertical');
                 document.getElementById('editorContainer').classList.add('vertical-tabs');
+                // Save the default preference
+                if (stored === null) {
+                    localStorage.setItem('edita_vertical_tabs', 'true');
+                }
             }
         } catch (error) {
             this.logError('LOAD VERTICAL TABS ERROR', 'Error loading vertical tabs preference', error);
