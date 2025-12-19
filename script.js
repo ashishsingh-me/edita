@@ -269,6 +269,7 @@ class Edita {
             
             localStorage.setItem('edita_open_tabs', stateJson);
             console.log(`Saved ${tabsToSave.length} open tabs (${(stateJson.length / 1024).toFixed(1)}KB)`);
+            console.log('File restore feature active - v1.1');
         } catch (e) {
             console.error('Failed to save open tabs', e);
             // If localStorage is full, try to clear old data
