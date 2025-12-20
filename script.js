@@ -45,7 +45,7 @@ class Edita {
 
             // Toolbar buttons
             document.getElementById('newBtn').addEventListener('click', () => this.newFile());
-            document.getElementById('openBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+            document.getElementById('openBtn').addEventListener('click', () => this.openFileWithPicker());
             document.getElementById('saveBtn').addEventListener('click', () => this.saveFile());
             document.getElementById('findBtn').addEventListener('click', () => this.find());
             document.getElementById('verticalTabsBtn').addEventListener('click', () => this.toggleVerticalTabs());
@@ -293,7 +293,8 @@ class Edita {
                     name: tab.name,
                     content: content,
                     modified: tab.modified,
-                    language: tab.language
+                    language: tab.language,
+                    wasSaved: !!tab.fileHandle // Track if file had a handle
                 };
             });
             
@@ -932,6 +933,74 @@ class Edita {
         }
     }
 
+    async openFileWithPicker() {
+        try {
+            // Use File System Access API if available
+            if ('showOpenFilePicker' in window) {
+                const options = {
+                    multiple: true,
+                    types: [{
+                        description: 'Text Files',
+                        accept: { 'text/*': ['.txt', '.js', '.html', '.css', '.json', '.md', '.py', '.xml', '.csv'] }
+                    }]
+                };
+                
+                const fileHandles = await window.showOpenFilePicker(options);
+                
+                for (const fileHandle of fileHandles) {
+                    const file = await fileHandle.getFile();
+                    const content = await file.text();
+                    
+                    // Check if file is already open
+                    const existingTab = this.tabs.find(t => t.name === file.name);
+                    if (existingTab) {
+                        this.switchTab(existingTab.id);
+                        this.log('INFO', `${file.name} is already open`);
+                        continue;
+                    }
+                    
+                    // Auto-format JSON files
+                    let formattedContent = content;
+                    const detectedLanguage = this.detectLanguage(file.name);
+                    if (detectedLanguage === 'json') {
+                        try {
+                            const parsed = JSON.parse(content);
+                            formattedContent = JSON.stringify(parsed, null, 2);
+                            this.log('INFO', `Auto-formatted JSON file: ${file.name}`);
+                        } catch (jsonError) {
+                            this.log('WARN', `Failed to parse JSON file: ${file.name}`, jsonError);
+                        }
+                    }
+                    
+                    const newId = this.tabs.length > 0 ? Math.max(...this.tabs.map(t => t.id)) + 1 : 0;
+                    this.tabs.push({
+                        id: newId,
+                        name: file.name,
+                        content: formattedContent,
+                        modified: false,
+                        language: detectedLanguage,
+                        fileHandle: fileHandle // Store the handle for later saving!
+                    });
+                    this.switchTab(newId);
+                    this.renderTabs();
+                    this.log('INFO', `File opened with handle: ${file.name}`);
+                }
+                
+                this.showToast(`Opened ${fileHandles.length} file${fileHandles.length > 1 ? 's' : ''}`, 'success');
+            } else {
+                // Fallback to file input for older browsers
+                document.getElementById('fileInput').click();
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                this.log('INFO', 'File open cancelled by user');
+            } else {
+                this.logError('OPEN FILE ERROR', 'Error opening file with picker', error);
+                this.showToast('Failed to open file', 'error');
+            }
+        }
+    }
+
     detectLanguage(filename) {
         const ext = filename.split('.').pop().toLowerCase();
         const langMap = {
@@ -986,9 +1055,9 @@ class Edita {
                     let handle = currentTab.fileHandle;
                     this.log('INFO', `File handle exists: ${!!handle}`);
                     
-                    // If no handle exists or it's an untitled file, show the picker
-                    if (!handle || isUntitled) {
-                        this.log('INFO', 'Showing file picker dialog');
+                    // If we don't have a handle yet, show the picker to get one
+                    if (!handle) {
+                        this.log('INFO', 'Showing file picker dialog (needed for write access)');
                         const options = {
                             suggestedName: isUntitled ? 'document.txt' : filename,
                             types: [{
@@ -1013,6 +1082,7 @@ class Edita {
                     currentTab.modified = false;
                     this.updateTabTitle();
                     this.renderTabs();
+                    this.saveOpenTabs(); // Save after updating fileHandle
                     this.log('INFO', `File saved: ${handle.name}`);
                     this.showToast(`File saved as ${handle.name}`, 'success');
                     return;
