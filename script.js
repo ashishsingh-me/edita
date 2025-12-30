@@ -3,8 +3,8 @@ class Edita {
     constructor() {
         this.editor = document.getElementById('editor');
         this.lineNumbers = document.getElementById('lineNumbers');
-        this.tabs = [{ id: 0, name: 'Untitled', content: '', modified: false, language: 'text', fileHandle: null }];
-        this.activeTabId = 0;
+        this.tabs = [];
+        this.activeTabId = null;
         this.logs = [];
         this.theme = 'dark';
         this.findIndex = 0;
@@ -476,6 +476,12 @@ class Edita {
                     continue;
                 }
                 
+                // Skip Untitled tabs (user doesn't want them restored)
+                if (tab.name === 'Untitled' || /^Untitled-\d+$/.test(tab.name)) {
+                    console.log('Skipping Untitled tab:', tab.name);
+                    continue;
+                }
+                
                 // Limit content size per tab
                 let content = tab.content || '';
                 const MAX_CONTENT = 1 * 1024 * 1024; // 1MB per file
@@ -934,6 +940,15 @@ class Edita {
 
     updateStatusBar() {
         try {
+            // Handle case when there are no tabs
+            if (this.tabs.length === 0) {
+                document.getElementById('fileName').textContent = 'No file open';
+                document.getElementById('fileSize').textContent = '0 Bytes';
+                document.getElementById('lineCol').textContent = 'Line 0, Col 0';
+                document.getElementById('charCount').textContent = '0 characters';
+                return;
+            }
+            
             const currentTab = this.tabs.find(t => t.id === this.activeTabId);
             const content = this.editor.value;
             const lines = content.split('\n');
