@@ -627,15 +627,6 @@ class Edita {
 
     handleKeydown(e) {
         try {
-            // If find dialog is open and Enter is pressed in the find input, trigger Find Next
-            const findDialog = document.getElementById('findDialog');
-            const findInput = document.getElementById('findInput');
-            if (e.key === 'Enter' && findDialog && findDialog.classList.contains('active') && document.activeElement === findInput) {
-                e.preventDefault();
-                this.findNext();
-                return;
-            }
-            
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const start = this.editor.selectionStart;
