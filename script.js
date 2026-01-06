@@ -185,6 +185,27 @@ class Edita {
             
             // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
+                // Intercept Enter when find dialog is open to prevent deleting selected text
+                const findDialog = document.getElementById('findDialog');
+                if (e.key === 'Enter' && findDialog.classList.contains('active')) {
+                    // If editor has focus with text selected, prevent editing and trigger Find Next
+                    if (document.activeElement === this.editor && this.editor.selectionStart !== this.editor.selectionEnd) {
+                        e.preventDefault();
+                        this.findNext();
+                        return;
+                    }
+                }
+                
+                // F3 for Find Next
+                if (e.key === 'F3') {
+                    const findDialog = document.getElementById('findDialog');
+                    if (findDialog.classList.contains('active')) {
+                        e.preventDefault();
+                        this.findNext();
+                        return;
+                    }
+                }
+                
                 // Close find dialog with Escape key
                 if (e.key === 'Escape') {
                     const findDialog = document.getElementById('findDialog');

@@ -357,6 +357,17 @@ body {
     tab-size: 4;
 }
 
+/* Keep selection visible even when editor is not focused */
+.editor::selection {
+    background-color: #264f78;
+    color: white;
+}
+
+.editor::-moz-selection {
+    background-color: #264f78;
+    color: white;
+}
+
 /* Status Bar (Notepad++ style) */
 .status-bar {
     display: flex;
