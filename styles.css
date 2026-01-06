@@ -468,7 +468,7 @@ body {
 }
 
 .dialog-content > .dialog-buttons {
-    padding-bottom: 20px;
+    padding-bottom: 8px;
 }
 
 .logs-content {
@@ -533,7 +533,12 @@ body {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
-    margin-top: 16px;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+.dialog-buttons + .dialog-buttons {
+    justify-content: center;
 }
 
 .dialog-buttons button, .logs-controls button {
@@ -569,7 +574,7 @@ body {
 }
 
 .find-results {
-    margin-top: 12px;
+    margin-top: 4px;
     padding: 8px;
     background-color: var(--bg-tertiary);
     border-radius: 2px;

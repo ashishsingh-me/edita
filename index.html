@@ -17,7 +17,7 @@
       gtag('config', 'G-CHC6B3TE1X');
     </script>
     
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
 </head>
@@ -120,7 +120,7 @@
                     <h3>Find & Replace</h3>
                     <button id="findDialogCloseBtn" class="close-btn">×</button>
                 </div>
-                <div class="input-group"><label>Find:</label><input type="text" id="findInput" placeholder="Search..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
+                <div class="input-group"><label>Find:</label><input type="text" id="findInput" pl   aceholder="Search..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
                 <div class="input-group"><label>Replace:</label><input type="text" id="replaceInput" placeholder="Replace with..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
                 <div class="search-options">
                     <div class="checkbox-group">
@@ -131,10 +131,13 @@
                 <div class="dialog-buttons">
                     <button id="findNextBtn">Find Next</button>
                     <button id="findPreviousBtn">Find Previous</button>
-                    <button id="searchAllFilesBtn">Search All Files</button>
                     <button id="countBtn">Count</button>
                     <button id="replaceOneBtn">Replace</button>
-                    <button id="replaceAllBtn">Replace All</button>
+                    <button id="replaceAllBtn">Replace All in File</button>
+                </div>
+                <div class="dialog-buttons">
+                    <button id="searchAllFilesBtn">Search All Files</button>
+                    <button id="countAllFilesBtn">Count in All Files</button>
                     <button id="closeDialogBtn">Close</button>
                 </div>
                 <div id="findResults" class="find-results"></div>
@@ -161,6 +164,6 @@
         </div>
 
     </div>
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=3"></script>
 </body>
 </html>

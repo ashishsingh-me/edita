@@ -149,6 +149,7 @@ class Edita {
             document.getElementById('replaceOneBtn').addEventListener('click', () => this.replaceOne());
             document.getElementById('replaceAllBtn').addEventListener('click', () => this.replaceAll());
             document.getElementById('countBtn').addEventListener('click', () => this.countOccurrences());
+            document.getElementById('countAllFilesBtn').addEventListener('click', () => this.countInAllFiles());
             document.getElementById('searchAllFilesBtn').addEventListener('click', () => this.searchAllFilesNow());
             document.getElementById('closeDialogBtn').addEventListener('click', () => this.closeDialog());
             document.getElementById('findDialogCloseBtn').addEventListener('click', () => this.closeDialog());
@@ -626,9 +627,10 @@ class Edita {
 
     handleKeydown(e) {
         try {
-            // If find dialog is open and Enter is pressed, trigger Find Next
+            // If find dialog is open and Enter is pressed in the find input, trigger Find Next
             const findDialog = document.getElementById('findDialog');
-            if (e.key === 'Enter' && findDialog && findDialog.style.display !== 'none') {
+            const findInput = document.getElementById('findInput');
+            if (e.key === 'Enter' && findDialog && findDialog.classList.contains('active') && document.activeElement === findInput) {
                 e.preventDefault();
                 this.findNext();
                 return;
@@ -1521,13 +1523,7 @@ class Edita {
                 this.editor.focus();
                 this.editor.setSelectionRange(index, index + searchTerm.length);
                 
-                // After setting selection, get the ACTUAL line number from the editor
-                const actualStart = this.editor.selectionStart;
-                const textBeforeSelection = this.editor.value.substring(0, actualStart);
-                const lineNumber = textBeforeSelection.split('\n').length;
-                
-                const message = `Found at line ${lineNumber}`;
-                document.getElementById('findResults').textContent = message;
+                document.getElementById('findResults').textContent = '';
                 
                 this.scrollToSelection();
                 this.moveDialogIfObscured();
@@ -1538,13 +1534,7 @@ class Edita {
                     this.editor.focus();
                     this.editor.setSelectionRange(firstIndex, firstIndex + searchTerm.length);
                     
-                    // After setting selection, get the ACTUAL line number from the editor
-                    const actualStart = this.editor.selectionStart;
-                    const textBeforeSelection = this.editor.value.substring(0, actualStart);
-                    const lineNumber = textBeforeSelection.split('\n').length;
-                    
-                    const message = `Wrapped to line ${lineNumber}`;
-                    document.getElementById('findResults').textContent = message;
+                    document.getElementById('findResults').textContent = 'Wrapped to beginning';
                     
                     this.scrollToSelection();
                     this.moveDialogIfObscured();
@@ -1578,12 +1568,7 @@ class Edita {
                 this.editor.focus();
                 this.editor.setSelectionRange(index, index + searchTerm.length);
                 
-                const actualStart = this.editor.selectionStart;
-                const textBeforeSelection = this.editor.value.substring(0, actualStart);
-                const lineNumber = textBeforeSelection.split('\n').length;
-                
-                const message = `Found at line ${lineNumber}`;
-                document.getElementById('findResults').textContent = message;
+                document.getElementById('findResults').textContent = '';
                 
                 this.scrollToSelection();
                 this.moveDialogIfObscured();
@@ -1594,12 +1579,7 @@ class Edita {
                     this.editor.focus();
                     this.editor.setSelectionRange(lastIndex, lastIndex + searchTerm.length);
                     
-                    const actualStart = this.editor.selectionStart;
-                    const textBeforeSelection = this.editor.value.substring(0, actualStart);
-                    const lineNumber = textBeforeSelection.split('\n').length;
-                    
-                    const message = `Wrapped to line ${lineNumber}`;
-                    document.getElementById('findResults').textContent = message;
+                    document.getElementById('findResults').textContent = 'Wrapped to end';
                     
                     this.scrollToSelection();
                     this.moveDialogIfObscured();
@@ -1732,7 +1712,7 @@ class Edita {
                 
                 matches.forEach(match => {
                     const highlightedLine = this.highlightMatch(match.line, searchTerm, caseSensitive);
-                    resultsHtml += `<div class="result-line" data-tab-id="${tab.id}" data-line="${match.lineNum}">Line ${match.lineNum}: ${highlightedLine}</div>`;
+                    resultsHtml += `<div class="result-line" data-tab-id="${tab.id}" data-line="${match.lineNum}">${highlightedLine}</div>`;
                 });
                 
                 resultsHtml += `</div></div>`;
@@ -2014,6 +1994,40 @@ class Edita {
         }
     }
 
+    countInAllFiles() {
+        try {
+            const searchTerm = document.getElementById('findInput').value;
+            if (!searchTerm) return;
+
+            const caseSensitive = document.getElementById('caseSensitive').checked;
+            const wholeWord = document.getElementById('wholeWord').checked;
+
+            let totalCount = 0;
+            let filesWithMatches = 0;
+            let resultsText = '';
+
+            this.tabs.forEach(tab => {
+                const count = this.countInText(tab.content, searchTerm, caseSensitive, wholeWord);
+                if (count > 0) {
+                    filesWithMatches++;
+                    totalCount += count;
+                    resultsText += `${tab.name}: ${count} match${count !== 1 ? 'es' : ''}\\n`;
+                }
+            });
+
+            if (totalCount === 0) {
+                document.getElementById('findResults').textContent = 'No matches found in any file';
+            } else {
+                const summary = `Found ${totalCount} match${totalCount !== 1 ? 'es' : ''} in ${filesWithMatches} file${filesWithMatches !== 1 ? 's' : ''}`;
+                document.getElementById('findResults').textContent = summary;
+                this.log('INFO', `Count in all files: ${totalCount} occurrences in ${filesWithMatches} files`);
+                this.showToast(summary, 'info');
+            }
+        } catch (error) {
+            this.logError('COUNT ALL FILES ERROR', 'Error counting in all files', error);
+        }
+    }
+
     replaceOne() {
         try {
             const searchTerm = document.getElementById('findInput').value;
@@ -2047,21 +2061,45 @@ class Edita {
             
             if (!searchTerm) return;
 
+            const caseSensitive = document.getElementById('caseSensitive').checked;
+            const wholeWord = document.getElementById('wholeWord').checked;
+            
             const originalContent = this.editor.value;
-            const newContent = originalContent.split(searchTerm).join(replaceTerm);
-            const count = (originalContent.match(new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+            let count = 0;
+            let newContent = originalContent;
+            
+            if (wholeWord) {
+                const flags = caseSensitive ? 'g' : 'gi';
+                const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(`\\b${escapedTerm}\\b`, flags);
+                const matches = originalContent.match(regex);
+                count = matches ? matches.length : 0;
+                if (count > 0) {
+                    newContent = originalContent.replace(regex, replaceTerm);
+                }
+            } else if (caseSensitive) {
+                const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                const matches = originalContent.match(regex);
+                count = matches ? matches.length : 0;
+                if (count > 0) {
+                    newContent = originalContent.replace(regex, replaceTerm);
+                }
+            } else {
+                const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const matches = originalContent.match(regex);
+                count = matches ? matches.length : 0;
+                if (count > 0) {
+                    newContent = originalContent.replace(regex, replaceTerm);
+                }
+            }
             
             if (count === 0) {
                 document.getElementById('findResults').textContent = 'No matches found';
                 return;
             }
             
-            // Use execCommand to preserve undo stack
-            // Note: Undo will select all text (limitation of select() + execCommand)
-            this.editor.focus();
-            this.editor.select();
-            document.execCommand('insertText', false, newContent);
-            
+            // Update content directly for better performance
+            this.editor.value = newContent;
             this.handleInput();
             
             this.log('INFO', `Replaced all: ${count} occurrences`);
