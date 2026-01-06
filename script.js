@@ -153,6 +153,14 @@ class Edita {
             document.getElementById('closeDialogBtn').addEventListener('click', () => this.closeDialog());
             document.getElementById('findDialogCloseBtn').addEventListener('click', () => this.closeDialog());
             
+            // Enter key on Find input triggers Find Next
+            document.getElementById('findInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.findNext();
+                }
+            });
+            
             // Logs dialog
             document.getElementById('clearLogsBtn').addEventListener('click', () => this.clearLogs());
             document.getElementById('exportLogsBtn').addEventListener('click', () => this.exportLogs());
@@ -618,6 +626,14 @@ class Edita {
 
     handleKeydown(e) {
         try {
+            // If find dialog is open and Enter is pressed, trigger Find Next
+            const findDialog = document.getElementById('findDialog');
+            if (e.key === 'Enter' && findDialog && findDialog.style.display !== 'none') {
+                e.preventDefault();
+                this.findNext();
+                return;
+            }
+            
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const start = this.editor.selectionStart;
@@ -1969,19 +1985,12 @@ class Edita {
             const searchTerm = document.getElementById('findInput').value;
             if (!searchTerm) return;
 
-            const searchScopeElement = document.querySelector('input[name="searchScope"]:checked');
-            const searchScope = searchScopeElement ? searchScopeElement.value : 'current';
             const caseSensitive = document.getElementById('caseSensitive').checked;
             const wholeWord = document.getElementById('wholeWord').checked;
 
-            if (searchScope === 'current') {
-                const count = this.countInText(this.editor.value, searchTerm, caseSensitive, wholeWord);
-                document.getElementById('findResults').textContent = `Found ${count} occurrence${count !== 1 ? 's' : ''}`;
-                this.log('INFO', `Count: ${count} occurrences of "${searchTerm}"`);
-            } else {
-                // Use searchInAllFiles to show detailed results panel
-                this.searchInAllFiles(searchTerm, caseSensitive, wholeWord);
-            }
+            const count = this.countInText(this.editor.value, searchTerm, caseSensitive, wholeWord);
+            document.getElementById('findResults').textContent = `Found ${count} occurrence${count !== 1 ? 's' : ''}`;
+            this.log('INFO', `Count: ${count} occurrences of "${searchTerm}"`);
         } catch (error) {
             this.logError('COUNT ERROR', 'Error counting occurrences', error);
         }
@@ -2065,6 +2074,9 @@ class Edita {
 
     closeDialog() {
         document.getElementById('findDialog').classList.remove('active');
+        // Clear search text boxes
+        document.getElementById('findInput').value = '';
+        document.getElementById('replaceInput').value = '';
     }
 
     toggleTheme() {
@@ -2202,9 +2214,8 @@ class Edita {
 
     findInFiles() {
         try {
-            this.log('INFO', 'Opening find dialog with all files scope');
+            this.log('INFO', 'Opening find dialog');
             document.getElementById('findDialog').classList.add('active');
-            document.getElementById('searchScopeAll').checked = true;
             document.getElementById('findInput').focus();
         } catch (error) {
             this.logError('FIND IN FILES ERROR', 'Error opening find dialog', error);
